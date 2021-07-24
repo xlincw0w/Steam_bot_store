@@ -59,7 +59,7 @@ function OffertTrade(steamID, amount, res) {
             })
 
             if (amount > TF2KEYS_INV.length) {
-                res.send({ trade: 'declined', msg: "Inventory can't supply\n\n. your demande is superior than the amount of keys available." })
+                res.send({ trade: 'declined', msg: "Inventory can't supply\n\n✹ Your demande is superior than the amount of keys available." })
             } else {
                 let offer = null
                 try {
