@@ -2,22 +2,10 @@ const SteamUser = require('steam-user')
 const SteamTotp = require('steam-totp')
 const SteamCommunity = require('steamcommunity')
 const TradeOfferManager = require('steam-tradeoffer-manager')
-const moment = require('moment')
-const axios = require('axios')
 
 require('dotenv').config()
 
 const { db } = require('./db/dbconfig')
-
-var Client = require('coinbase').Client
-
-// var Coinclient = new Client({ apiKey: 'API KEY', apiSecret: 'API SECRET' })
-
-// Actions
-// const { getParams } = require('./utilities')
-// const { HandlePurchase, HandleSell, HandleDeposit, HandleWithdraw, SetBuyPrice, SetSellPrice, SetWithdrawalFees, SetWithdrawalMin } = require('./actions/transactions')
-// const { GetBalance } = require('./actions/userdata')
-// const { GetPrices, GetFees, GetMinWithdrawal, GetOwner, GetBuyCost, GetSellCost } = require('./actions/fetchdata')
 
 const client = new SteamUser()
 const community = new SteamCommunity()
@@ -47,6 +35,58 @@ client.on('loggedOn', () => {
 
     client.enableTwoFactor(() => {})
     client.setPersona(SteamUser.EPersonaState.Online)
+})
+
+manager.on('newOffer', async (offer) => {
+    const steamID = offer.partner.getSteamID64()
+    const valid_keys = true
+
+    let transaction = await db('sales').select('*').where({ id_supplier: steamID })
+    if (transaction.length > 0) transaction = transaction[0]
+
+    if (offer.itemsToGive.length === 0 && offer.itemsToReceive === transaction.amount) {
+        offer.itemsToGive.map((item) => {
+            if (item.appid !== 440 || item.classid !== '101785959') {
+                valid_keys = false
+            }
+        })
+
+        if (valid_keys) {
+            offer.accept((err, status) => {
+                if (err) {
+                    console.log(err)
+                } else {
+                    try {
+                        db.transaction(async (trx) => {
+                            await db('sales')
+                                .update({
+                                    state: 'validated',
+                                })
+                                .where({ id_supplier: transaction.id_supplier, id_currency: transaction.id_currency })
+                                .transacting(trx)
+
+                            await db('balances')
+                                .update({
+                                    balance: balance.balance + transaction.price,
+                                })
+                                .where({ id_client: balance.id_client, id_currency: balance.id_currency })
+                                .transacting(trx)
+                        })
+                    } catch (err) {
+                        console.log(err)
+                    }
+                }
+            })
+        } else {
+            offer.decline((err) => {
+                if (err) {
+                    console.log(err)
+                } else {
+                    console.log('Donation declined (wanted our items).')
+                }
+            })
+        }
+    }
 })
 
 function OffertTrade(steamID, amount, res) {
