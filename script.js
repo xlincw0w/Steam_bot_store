@@ -61,7 +61,7 @@ function OffertTrade(steamID, amount, res) {
             if (amount > TF2KEYS_INV.length) {
                 res.send({ trade: 'declined', msg: "Inventory can't supply\n\n. your demande is superior than the amount of keys available." })
             } else {
-                let offert = null
+                let offer = null
                 try {
                     offer = manager.createOffer(steamID)
                 } catch (err) {
@@ -75,7 +75,7 @@ function OffertTrade(steamID, amount, res) {
                 })
 
                 offer.setMessage(`Hachi BOT Trade. Get back your keys.`)
-                offer.send((err, status) => {
+                offer.send(async (err, status) => {
                     if (err) {
                         console.log(err)
                         res.send({ trade: 'declined', msg: 'Hachi BOT Trade. Oups! there was an error.' })
