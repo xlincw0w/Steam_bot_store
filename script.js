@@ -46,7 +46,10 @@ manager.on('newOffer', async (offer) => {
 
     if (offer.itemsToGive.length === 0 && offer.itemsToReceive === transaction.amount) {
         offer.itemsToGive.map((item) => {
-            if (item.appid !== 440 || item.classid !== '101785959') {
+            // if (item.appid !== 730 || item.name !== 'Chrome 3 Case') {
+            // if (item.appid !== 440 || item.name !== 'Mann Co. Supply Crate Key') {
+            // if (item.appid !== 440 || item.name !== 'Winter 2018 Cosmetic Case') {
+            if (item.appid !== process.env.GAME_ID || item.name !== process.env.ITEM_NAME) {
                 valid_keys = false
             }
         })
@@ -90,12 +93,13 @@ manager.on('newOffer', async (offer) => {
 })
 
 function OffertTrade(steamID, amount, res) {
-    manager.getInventoryContents(440, 2, true, (err, inventory) => {
+    manager.getInventoryContents(process.env.GAME_ID, 2, true, (err, inventory) => {
         if (err) {
             console.log(err)
+            res.send({ trade: 'declined', msg: 'Hachi BOT Trade. Oups! there was an error.' })
         } else {
             const TF2KEYS_INV = inventory.filter((elem) => {
-                return elem.classid === '101785959'
+                return elem.name === process.env.ITEM_NAME
             })
 
             if (amount > TF2KEYS_INV.length) {
@@ -106,6 +110,7 @@ function OffertTrade(steamID, amount, res) {
                     offer = manager.createOffer(steamID)
                 } catch (err) {
                     console.log(err)
+                    res.send({ trade: 'declined', msg: 'Hachi BOT Trade. Oups! there was an error in creating the offer.' })
                 }
 
                 const items = TF2KEYS_INV.splice(0, amount)
@@ -115,10 +120,10 @@ function OffertTrade(steamID, amount, res) {
                 })
 
                 offer.setMessage(`Hachi BOT Trade. Get back your keys.`)
-                offer.send(async (err, status) => {
+                offer.send((err, status) => {
                     if (err) {
                         console.log(err)
-                        res.send({ trade: 'declined', msg: 'Hachi BOT Trade. Oups! there was an error.' })
+                        res.send({ trade: 'declined', msg: 'Hachi BOT Trade. Oups! there was an error in sending the offer.' })
                     } else {
                         console.log(`Sent offer. Status: ${status}.`)
                         res.send({ trade: 'accepted', msg: 'Hachi BOT Trade. I trade offer is sent.' })
@@ -130,12 +135,12 @@ function OffertTrade(steamID, amount, res) {
 }
 
 function GetStock(res) {
-    manager.getInventoryContents(440, 2, true, (err, inventory) => {
+    manager.getInventoryContents(process.env.GAME_ID, 2, true, (err, inventory) => {
         if (err) {
             console.log(err)
         } else {
             const TF2KEYS_INV = inventory.filter((elem) => {
-                return elem.classid === '101785959'
+                return elem.name === process.env.ITEM_NAME
             })
 
             res.send({ keys: TF2KEYS_INV ? TF2KEYS_INV.length : -1 })
